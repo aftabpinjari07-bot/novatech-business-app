@@ -51,62 +51,115 @@ ctaButtons.forEach(function (button) {
   });
 });
 
-// Basic contact form validation for any existing form.
-const contactForm = document.querySelector('form');
+// Contact form validation for the NovaTech contact form.
+const contactForm = document.querySelector('#contact-form');
 
 if (contactForm) {
-  const requiredFields = contactForm.querySelectorAll('input[required], textarea[required]');
+  const nameField = contactForm.querySelector('#full-name');
+  const emailField = contactForm.querySelector('#email');
+  const messageField = contactForm.querySelector('#message');
+  const requiredFields = [nameField, emailField, messageField].filter(Boolean);
 
   function setFieldError(field, message) {
     field.setAttribute('aria-invalid', 'true');
-    field.classList.add('invalid');
+    field.setAttribute('data-error', message);
 
-    const existingError = field.parentNode.querySelector('.form-error');
+    const parentGroup = field.closest('.input-group');
+    const existingError = parentGroup ? parentGroup.querySelector('.form-error') : null;
 
     if (existingError) {
       existingError.textContent = message;
       return;
     }
 
-    const errorMessage = document.createElement('small');
-    errorMessage.className = 'form-error';
-    errorMessage.textContent = message;
-    field.parentNode.appendChild(errorMessage);
+    if (parentGroup) {
+      const errorMessage = document.createElement('small');
+      errorMessage.className = 'form-error';
+      errorMessage.textContent = message;
+      parentGroup.appendChild(errorMessage);
+    }
   }
 
   function clearFieldError(field) {
     field.removeAttribute('aria-invalid');
-    field.classList.remove('invalid');
+    field.removeAttribute('data-error');
 
-    const existingError = field.parentNode.querySelector('.form-error');
+    const parentGroup = field.closest('.input-group');
+    const existingError = parentGroup ? parentGroup.querySelector('.form-error') : null;
 
     if (existingError) {
       existingError.remove();
     }
   }
 
+  function validateField(field) {
+    const value = field.value.trim();
+
+    if (field === emailField) {
+      if (value === '') {
+        setFieldError(field, 'Email is required.');
+        return false;
+      }
+
+      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+      if (!isValidEmail) {
+        setFieldError(field, 'Please enter a valid email address.');
+        return false;
+      }
+
+      clearFieldError(field);
+      return true;
+    }
+
+    if (value === '') {
+      setFieldError(field, 'This field is required.');
+      return false;
+    }
+
+    clearFieldError(field);
+    return true;
+  }
+
   requiredFields.forEach(function (field) {
     field.addEventListener('blur', function () {
-      if (field.value.trim() === '') {
-        setFieldError(field, 'This field is required.');
-      } else {
-        clearFieldError(field);
+      validateField(field);
+    });
+
+    field.addEventListener('input', function () {
+      if (field.getAttribute('aria-invalid') === 'true') {
+        validateField(field);
       }
     });
   });
 
   contactForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
     let isValid = true;
 
     requiredFields.forEach(function (field) {
-      if (field.value.trim() === '') {
-        setFieldError(field, 'This field is required.');
+      if (!validateField(field)) {
         isValid = false;
       }
     });
 
-    if (!isValid) {
-      event.preventDefault();
+    if (isValid) {
+      requiredFields.forEach(function (field) {
+        clearFieldError(field);
+      });
+
+      contactForm.reset();
+      const successMessage = document.createElement('p');
+      successMessage.className = 'form-success';
+      successMessage.textContent = 'Thanks! Your message has been received.';
+      const existingSuccess = contactForm.querySelector('.form-success');
+
+      if (existingSuccess) {
+        existingSuccess.remove();
+      }
+
+      contactForm.appendChild(successMessage);
     }
   });
 }
