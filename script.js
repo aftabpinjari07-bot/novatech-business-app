@@ -1,10 +1,14 @@
 /*
   NovaTech interactions
-  This script adds a few small browser behaviors without changing
-  the page design or the existing HTML structure.
+
+  This script adds browser behaviors without changing
+  the page design or existing HTML structure.
 */
 
-// Smooth scrolling for in-page navigation links.
+// ============================================================
+// Smooth scrolling for in-page navigation links
+// ============================================================
+
 const pageLinks = document.querySelectorAll('a[href^="#"]');
 
 pageLinks.forEach(function (link) {
@@ -13,8 +17,13 @@ pageLinks.forEach(function (link) {
   if (!targetSelector || targetSelector === '#') {
     link.addEventListener('click', function (event) {
       event.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     });
+
     return;
   }
 
@@ -26,140 +35,270 @@ pageLinks.forEach(function (link) {
 
   link.addEventListener('click', function (event) {
     event.preventDefault();
-    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    targetElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   });
 });
 
-// CTA buttons: add a simple interaction without changing the design.
+
+// ============================================================
+// CTA buttons
+// ============================================================
+
 const ctaButtons = document.querySelectorAll('.btn');
 
 ctaButtons.forEach(function (button) {
   button.addEventListener('click', function (event) {
     const href = button.getAttribute('href');
 
-    // If the button points to the top of the page, keep it safe and smooth.
+    // Keep "#" buttons at the top of the page.
     if (href === '#') {
       event.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
     }
 
-    // Toggle a lightweight pressed state for a very simple click interaction.
+    // Lightweight pressed state.
     button.setAttribute('aria-pressed', 'true');
+
     window.setTimeout(function () {
       button.setAttribute('aria-pressed', 'false');
     }, 200);
   });
 });
 
-// Contact form validation for the NovaTech contact form.
-const contactForm = document.querySelector('#contact-form');
+
+// ============================================================
+// Contact form validation + local storage
+// ============================================================
+
+const contactForm = document.querySelector('form');
 
 if (contactForm) {
+
   const nameField = contactForm.querySelector('#full-name');
   const emailField = contactForm.querySelector('#email');
+  const phoneField = contactForm.querySelector('#phone');
   const messageField = contactForm.querySelector('#message');
-  const requiredFields = [nameField, emailField, messageField].filter(Boolean);
+
+  const requiredFields = contactForm.querySelectorAll(
+    'input[required], textarea[required]'
+  );
+
+
+  // ----------------------------------------------------------
+  // Show field error
+  // ----------------------------------------------------------
 
   function setFieldError(field, message) {
     field.setAttribute('aria-invalid', 'true');
-    field.setAttribute('data-error', message);
+    field.classList.add('invalid');
 
-    const parentGroup = field.closest('.input-group');
-    const existingError = parentGroup ? parentGroup.querySelector('.form-error') : null;
+    const parentGroup = field.closest('.input-group') || field.parentNode;
+
+    const existingError = parentGroup.querySelector('.form-error');
 
     if (existingError) {
       existingError.textContent = message;
       return;
     }
 
-    if (parentGroup) {
-      const errorMessage = document.createElement('small');
-      errorMessage.className = 'form-error';
-      errorMessage.textContent = message;
-      parentGroup.appendChild(errorMessage);
-    }
+    const errorMessage = document.createElement('small');
+
+    errorMessage.className = 'form-error';
+    errorMessage.textContent = message;
+
+    parentGroup.appendChild(errorMessage);
   }
+
+
+  // ----------------------------------------------------------
+  // Clear field error
+  // ----------------------------------------------------------
 
   function clearFieldError(field) {
     field.removeAttribute('aria-invalid');
-    field.removeAttribute('data-error');
+    field.classList.remove('invalid');
 
-    const parentGroup = field.closest('.input-group');
-    const existingError = parentGroup ? parentGroup.querySelector('.form-error') : null;
+    const parentGroup = field.closest('.input-group') || field.parentNode;
+
+    const existingError = parentGroup.querySelector('.form-error');
 
     if (existingError) {
       existingError.remove();
     }
   }
 
+
+  // ----------------------------------------------------------
+  // Validate individual field
+  // ----------------------------------------------------------
+
   function validateField(field) {
+
     const value = field.value.trim();
 
-    if (field === emailField) {
-      if (value === '') {
-        setFieldError(field, 'Email is required.');
-        return false;
-      }
-
-      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-
-      if (!isValidEmail) {
-        setFieldError(field, 'Please enter a valid email address.');
-        return false;
-      }
-
-      clearFieldError(field);
-      return true;
-    }
-
+    // Empty field
     if (value === '') {
       setFieldError(field, 'This field is required.');
       return false;
     }
 
+
+    // Email validation
+    if (field === emailField) {
+
+      const isValidEmail =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+      if (!isValidEmail) {
+        setFieldError(
+          field,
+          'Please enter a valid email address.'
+        );
+
+        return false;
+      }
+    }
+
+
     clearFieldError(field);
+
     return true;
   }
 
+
+  // ----------------------------------------------------------
+  // Validate fields while typing / leaving field
+  // ----------------------------------------------------------
+
   requiredFields.forEach(function (field) {
+
     field.addEventListener('blur', function () {
       validateField(field);
     });
 
+
     field.addEventListener('input', function () {
+
       if (field.getAttribute('aria-invalid') === 'true') {
         validateField(field);
       }
+
     });
+
   });
 
+
+  // ==========================================================
+  // Form submit
+  // ==========================================================
+
   contactForm.addEventListener('submit', function (event) {
+
     event.preventDefault();
 
     let isValid = true;
 
+
+    // Validate all required fields
     requiredFields.forEach(function (field) {
+
       if (!validateField(field)) {
         isValid = false;
       }
+
     });
 
-    if (isValid) {
-      requiredFields.forEach(function (field) {
-        clearFieldError(field);
-      });
 
-      contactForm.reset();
-      const successMessage = document.createElement('p');
-      successMessage.className = 'form-success';
-      successMessage.textContent = 'Thanks! Your message has been received.';
-      const existingSuccess = contactForm.querySelector('.form-success');
-
-      if (existingSuccess) {
-        existingSuccess.remove();
-      }
-
-      contactForm.appendChild(successMessage);
+    // Stop here if validation failed
+    if (!isValid) {
+      return;
     }
+
+
+    // --------------------------------------------------------
+    // Collect form data
+    // --------------------------------------------------------
+
+    const formData = {
+      name: nameField ? nameField.value.trim() : '',
+      email: emailField ? emailField.value.trim() : '',
+      phone: phoneField ? phoneField.value.trim() : '',
+      message: messageField ? messageField.value.trim() : '',
+      savedAt: new Date().toISOString()
+    };
+
+
+    // --------------------------------------------------------
+    // Get previously saved messages
+    // --------------------------------------------------------
+
+    let savedMessages = [];
+
+    try {
+      savedMessages =
+        JSON.parse(
+          localStorage.getItem('novatech_messages')
+        ) || [];
+    } catch (error) {
+      savedMessages = [];
+    }
+
+
+    // --------------------------------------------------------
+    // Add new message
+    // --------------------------------------------------------
+
+    savedMessages.push(formData);
+
+
+    // --------------------------------------------------------
+    // Save messages locally
+    // --------------------------------------------------------
+
+    localStorage.setItem(
+      'novatech_messages',
+      JSON.stringify(savedMessages)
+    );
+
+
+    // --------------------------------------------------------
+    // Clear form
+    // --------------------------------------------------------
+
+    contactForm.reset();
+
+
+    // Remove previous success message
+    const existingSuccess =
+      contactForm.querySelector('.form-success');
+
+    if (existingSuccess) {
+      existingSuccess.remove();
+    }
+
+
+    // --------------------------------------------------------
+    // Show success message
+    // --------------------------------------------------------
+
+    const successMessage =
+      document.createElement('p');
+
+    successMessage.className = 'form-success';
+
+    successMessage.textContent =
+      'Message saved successfully on this device.';
+
+    contactForm.appendChild(successMessage);
+
   });
+
 }
