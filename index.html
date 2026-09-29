@@ -565,6 +565,31 @@
 
       .service-app-card:hover { border-color: #D8E1F3; box-shadow: var(--sh-md); }
 
+      .service-app-card.is-backend-service {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "head" "desc" "action";
+        gap: 0;
+      }
+
+      .service-app-card.is-backend-service .service-card-header {
+        grid-area: head;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        padding-bottom: 14px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--line-2);
+      }
+
+      .service-app-card.is-backend-service .service-desc {
+        grid-area: desc;
+        margin: 0 0 16px;
+        padding: 0;
+        border: 0;
+      }
+
+      .service-app-card.is-backend-service .service-open-btn { grid-area: action; }
+
       .service-card-header {
         display: flex;
         align-items: center;
@@ -1537,6 +1562,17 @@
 
       .empty-state .btn { margin-top: 6px; }
 
+      .service-loading-spinner {
+        width: 26px;
+        height: 26px;
+        border: 3px solid var(--brand-line);
+        border-top-color: var(--brand);
+        border-radius: 50%;
+        animation: serviceSpinner .7s linear infinite;
+      }
+
+      @keyframes serviceSpinner { to { transform: rotate(360deg); } }
+
       /* Bottom navigation */
       .bottom-nav {
         position: fixed;
@@ -1927,64 +1963,11 @@
           </div>
 
           <div class="services-list">
-
-            <!-- Service 1 -->
-            <article class="service-app-card" id="service-web">
-              <div class="service-card-header">
-                <div class="service-icon">
-                  <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M8 19h8"></path><path d="M9 9h6"></path><path d="M9 12h4"></path></svg>
-                </div>
-                <div class="service-heading">
-                  <h3>Web Development</h3>
-                  <p class="service-tagline">Responsive, scalable web applications</p>
-                </div>
-                <span class="service-from">From ₹40,000</span>
-              </div>
-              <p class="service-desc">We craft robust digital products optimized for performance, security, and search visibility.</p>
-
-              <button class="btn btn-sm btn-outline service-open-btn" onclick="openServiceDetail('web')">
-                <span>View Service</span><span aria-hidden="true">→</span>
-              </button>
-            </article>
-
-            <!-- Service 2 -->
-            <article class="service-app-card" id="service-design">
-              <div class="service-card-header">
-                <div class="service-icon">
-                  <svg viewBox="0 0 24 24"><path d="M4 18V6.5A2.5 2.5 0 0 1 6.5 4H18a2 2 0 0 1 2 2v11.5"></path><path d="M8 8.5h8"></path><path d="M8 12h8"></path><path d="M8 15.5h5"></path></svg>
-                </div>
-                <div class="service-heading">
-                  <h3>UI/UX Design</h3>
-                  <p class="service-tagline">User-centered interface design</p>
-                </div>
-                <span class="service-from">From ₹25,000</span>
-              </div>
-              <p class="service-desc">Intuitive wireframes, interactive prototypes, and design systems tailored to your brand.</p>
-
-              <button class="btn btn-sm btn-outline service-open-btn" onclick="openServiceDetail('design')">
-                <span>View Service</span><span aria-hidden="true">→</span>
-              </button>
-            </article>
-
-            <!-- Service 3 -->
-            <article class="service-app-card" id="service-solutions">
-              <div class="service-card-header">
-                <div class="service-icon">
-                  <svg viewBox="0 0 24 24"><path d="M5 18V8.5A1.5 1.5 0 0 1 6.5 7H18a1.5 1.5 0 0 1 1.5 1.5V18"></path><path d="M9 18v-6h6v6"></path><path d="M3 18h18"></path></svg>
-                </div>
-                <div class="service-heading">
-                  <h3>Business &amp; Digital Solutions</h3>
-                  <p class="service-tagline">Process automation &amp; software strategy</p>
-                </div>
-                <span class="service-from">From ₹60,000</span>
-              </div>
-              <p class="service-desc">Tailored operational tools and cloud integration to maximize efficiency and reduce overhead.</p>
-
-              <button class="btn btn-sm btn-outline service-open-btn" onclick="openServiceDetail('solutions')">
-                <span>View Service</span><span aria-hidden="true">→</span>
-              </button>
-            </article>
-
+            <div id="customer-services-state" class="empty-state show" role="status" aria-live="polite">
+              <span class="empty-icon" aria-hidden="true"><span class="service-loading-spinner"></span></span>
+              <strong>Loading services</strong>
+              <p>Fetching available services for NovaTech Demo Business.</p>
+            </div>
           </div>
         </section>
 
@@ -2004,6 +1987,7 @@
             <button class="tab-btn" role="tab" aria-selected="false" data-filter="completed" onclick="filterRequests('completed', this)">Completed</button>
           </div>
 
+          <div id="customer-requests-state" class="empty-state" role="status" aria-live="polite"></div>
           <div id="requests-list" class="requests-list">
             <!-- Sample Request Item 1 -->
             <article class="request-card" data-status="in-progress">
@@ -2279,7 +2263,7 @@
               <button type="button" class="btn btn-outline" onclick="closeCustomerRequest()">Cancel</button>
               <button type="submit" class="btn btn-primary">Submit Request</button>
             </div>
-            <p class="flow-note">This request form is a UI preview and is not connected yet.</p>
+            <p class="flow-note">Your request will be sent to NovaTech. Selected photos are not uploaded.</p>
           </form>
           <p id="customer-request-status" class="flow-status" role="status" aria-live="polite"></p>
         </div>
@@ -2506,6 +2490,7 @@
           activeNavItem.classList.add('active');
         }
 
+        if (screenId === 'requests') loadCustomerRequests();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
@@ -2531,7 +2516,8 @@
         });
 
         const emptyState = document.getElementById('requests-empty');
-        if (emptyState) {
+        const loaded = document.getElementById('requests-list').dataset.loaded === 'true';
+        if (emptyState && loaded) {
           emptyState.classList.toggle('show', visibleCount === 0);
         }
       }
@@ -2642,6 +2628,526 @@
         button.textContent = label;
         button.addEventListener('click', onClick);
         return button;
+      }
+
+      const CUSTOMER_DEMO_BUSINESS_NAME = 'NovaTech Demo Business';
+      const CUSTOMER_SERVICE_FALLBACK_IMAGE = 'Images/business-website.png';
+      let activeCustomerServices = new Map();
+      let customerServicesLoadPromise = null;
+      let customerServicesLoaded = false;
+      const customerServiceVariants = new Map();
+      let customerVariantLoadSequence = 0;
+
+      function setCustomerServicesState(state, title, description) {
+        const status = document.getElementById('customer-services-state');
+        status.replaceChildren();
+        status.classList.add('show');
+
+        const icon = appendTextElement(status, 'span', 'empty-icon', '');
+        icon.setAttribute('aria-hidden', 'true');
+        if (state === 'loading') {
+          const spinner = document.createElement('span');
+          spinner.className = 'service-loading-spinner';
+          icon.appendChild(spinner);
+        } else {
+          icon.textContent = state === 'error' ? '!' : '✦';
+        }
+
+        appendTextElement(status, 'strong', '', title);
+        appendTextElement(status, 'p', '', description);
+        if (state === 'error') {
+          const retry = createServiceAction('Try Again', 'btn-outline', loadCustomerServices);
+          status.appendChild(retry);
+        }
+      }
+
+      function getCustomerServiceImageUrl(imageUrl) {
+        if (typeof imageUrl !== 'string' || !imageUrl.trim()) return CUSTOMER_SERVICE_FALLBACK_IMAGE;
+
+        try {
+          const resolvedUrl = new URL(imageUrl.trim(), window.location.href);
+          const isRelativeFileUrl = resolvedUrl.protocol === 'file:' &&
+            !/^[a-z][a-z\d+.-]*:/i.test(imageUrl.trim());
+          return resolvedUrl.protocol === 'https:' || resolvedUrl.protocol === 'http:' || isRelativeFileUrl
+            ? resolvedUrl.href
+            : CUSTOMER_SERVICE_FALLBACK_IMAGE;
+        } catch (error) {
+          return CUSTOMER_SERVICE_FALLBACK_IMAGE;
+        }
+      }
+
+      function createCustomerServiceCard(service) {
+        const card = document.createElement('article');
+        card.className = 'service-app-card is-backend-service';
+        card.dataset.serviceId = service.id;
+
+        const header = document.createElement('div');
+        header.className = 'service-card-header';
+        appendTextElement(header, 'span', 'service-icon', '✦').setAttribute('aria-hidden', 'true');
+
+        const heading = document.createElement('div');
+        heading.className = 'service-heading';
+        appendTextElement(heading, 'h3', '', service.name);
+        header.appendChild(heading);
+        card.appendChild(header);
+
+        appendTextElement(card, 'p', 'service-desc', service.description);
+        const openButton = createServiceAction('View Service', 'btn-sm btn-outline service-open-btn', () => openServiceDetail(service.id));
+        appendTextElement(openButton, 'span', '', '→').setAttribute('aria-hidden', 'true');
+        card.appendChild(openButton);
+        return card;
+      }
+
+      function renderCustomerServices(services) {
+        const list = document.querySelector('#screen-services .services-list');
+        const status = document.getElementById('customer-services-state');
+        list.querySelectorAll('.service-app-card').forEach(card => card.remove());
+        activeCustomerServices = new Map(services.map(service => [service.id, service]));
+        services.forEach(service => {
+          customerServiceCatalog[service.id] = service;
+        });
+
+        if (services.length === 0) {
+          setCustomerServicesState('empty', 'No services available', 'There are no active services available right now.');
+          return;
+        }
+
+        status.classList.remove('show');
+        services.forEach(service => list.appendChild(createCustomerServiceCard(service)));
+      }
+
+      async function fetchCustomerServiceRows(path) {
+        const response = await fetch(CUSTOMER_SUPABASE_URL + path, {
+          headers: {
+            apikey: CUSTOMER_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: 'Bearer ' + CUSTOMER_SUPABASE_PUBLISHABLE_KEY,
+            Accept: 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error('Customer services request failed with status ' + response.status);
+        return response.json();
+      }
+
+      let customerRequestsLoadSequence = 0;
+      let customerRequests = [];
+
+      async function fetchCustomerRequestRows(path, accessToken) {
+        const response = await fetch(CUSTOMER_SUPABASE_URL + path, {
+          headers: {
+            apikey: CUSTOMER_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: 'Bearer ' + accessToken,
+            Accept: 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error('Customer requests could not be loaded.');
+        const rows = await response.json();
+        if (!Array.isArray(rows)) throw new Error('The customer requests response was invalid.');
+        return rows;
+      }
+
+      function setCustomerRequestsState(kind, title, description, retry) {
+        const state = document.getElementById('customer-requests-state');
+        state.replaceChildren();
+        state.classList.add('show');
+
+        const icon = appendTextElement(state, 'span', 'empty-icon', '');
+        icon.setAttribute('aria-hidden', 'true');
+        if (kind === 'loading') {
+          const spinner = document.createElement('span');
+          spinner.className = 'service-loading-spinner';
+          icon.appendChild(spinner);
+        } else {
+          icon.textContent = kind === 'error' || kind === 'offline' ? '!' : '✦';
+        }
+        appendTextElement(state, 'strong', '', title);
+        appendTextElement(state, 'p', '', description);
+        if (retry) state.appendChild(createServiceAction('Try Again', 'btn-outline', loadCustomerRequests));
+      }
+
+      function normalizeCustomerOrderStatus(value) {
+        const normalized = typeof value === 'string'
+          ? value.trim().toLowerCase().replace(/[\s_]+/g, '-')
+          : '';
+        const stage = normalized.includes('complete') ? 'completed'
+          : normalized.includes('progress') ? 'in-progress'
+            : normalized.includes('accept') ? 'accepted'
+              : 'pending';
+        const label = normalized
+          ? normalized.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
+          : 'Pending';
+        return { stage: stage, label: label };
+      }
+
+      function formatCustomerOrderDate(value) {
+        const date = new Date(value);
+        if (!Number.isFinite(date.getTime())) return 'Date unavailable';
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+
+      function formatCustomerPaymentStatus(value) {
+        if (typeof value !== 'string' || !value.trim()) return 'Pending';
+        return value.trim().replace(/[_-]+/g, ' ').replace(/\b\w/g, character => character.toUpperCase());
+      }
+
+      function createCustomerOrderCard(order) {
+        const card = document.createElement('article');
+        const status = normalizeCustomerOrderStatus(order.order_status);
+        card.className = 'request-card';
+        card.dataset.status = status.stage;
+
+        const header = document.createElement('div');
+        header.className = 'request-header';
+        appendTextElement(header, 'span', 'request-id', '#' + order.id.slice(0, 8).toUpperCase());
+        appendTextElement(header, 'span', 'status-badge status-' + status.stage, status.label);
+        card.appendChild(header);
+
+        const tracker = document.createElement('div');
+        tracker.className = 'status-track';
+        tracker.setAttribute('aria-hidden', 'true');
+        ['Pending', 'Accepted', 'In Progress', 'Completed'].forEach(label =>
+          appendTextElement(tracker, 'span', '', label)
+        );
+        card.appendChild(tracker);
+
+        appendTextElement(card, 'h3', 'request-title', order.serviceName + ' - ' + order.variantName);
+        const meta = document.createElement('div');
+        meta.className = 'request-meta';
+        appendTextElement(meta, 'span', '', 'Requested: ' + formatCustomerOrderDate(order.created_at));
+        if (order.agreed_price === null || order.agreed_price === undefined) {
+          appendTextElement(meta, 'span', 'price', 'Custom / To be confirmed');
+        } else {
+          appendTextElement(meta, 'span', 'price', formatCustomerVariantPrice(order.agreed_price, order.currency));
+        }
+        appendTextElement(meta, 'span', '', 'Payment: ' + formatCustomerPaymentStatus(order.payment_status));
+        card.appendChild(meta);
+        if (order.notes) appendTextElement(card, 'p', 'request-summary', order.notes);
+
+        const actions = document.createElement('div');
+        actions.className = 'request-actions';
+        actions.appendChild(createServiceAction('View Details', 'btn-sm btn-outline', () => viewCustomerOrderDetails(order)));
+        card.appendChild(actions);
+        return card;
+      }
+
+      function viewCustomerOrderDetails(order) {
+        const body = document.getElementById('details-modal-body');
+        const status = normalizeCustomerOrderStatus(order.order_status);
+        body.replaceChildren();
+        appendTextElement(body, 'h4', '', 'Request #' + order.id.slice(0, 8).toUpperCase());
+        appendTextElement(body, 'p', '', 'Service: ' + order.serviceName);
+        appendTextElement(body, 'p', '', 'Package: ' + order.variantName);
+        appendTextElement(body, 'p', '', 'Request status: ' + status.label);
+        appendTextElement(body, 'p', '', 'Payment status: ' + formatCustomerPaymentStatus(order.payment_status));
+        appendTextElement(body, 'p', '', 'Requested: ' + formatCustomerOrderDate(order.created_at));
+        appendTextElement(body, 'p', '', 'Agreed price: ' + (
+          order.agreed_price === null || order.agreed_price === undefined
+            ? 'Custom / To be confirmed'
+            : formatCustomerVariantPrice(order.agreed_price, order.currency)
+        ));
+        if (order.notes) appendTextElement(body, 'p', '', 'Request details: ' + order.notes);
+        document.getElementById('details-modal').classList.remove('hidden');
+      }
+
+      async function loadCustomerRequests() {
+        const sequence = ++customerRequestsLoadSequence;
+        const list = document.getElementById('requests-list');
+        const emptyState = document.getElementById('requests-empty');
+        const state = document.getElementById('customer-requests-state');
+        list.dataset.loaded = 'false';
+        list.querySelectorAll('.request-card').forEach(card => card.remove());
+        emptyState.classList.remove('show');
+        state.classList.remove('show');
+
+        if (!navigator.onLine) {
+          setCustomerRequestsState('offline', 'You appear to be offline', 'Connect to the internet to load your requests.', true);
+          return;
+        }
+        setCustomerRequestsState('loading', 'Loading your requests', 'Fetching requests for your account.');
+
+        try {
+          await customerAuthInitialization;
+          const authenticated = await verifyCustomerSession();
+          if (sequence !== customerRequestsLoadSequence) return;
+          if (!authenticated) {
+            customerRequests = [];
+            setCustomerRequestsState('login', 'Log in to view your requests', 'Your requests are available after signing in.');
+            openCustomerAuth();
+            return;
+          }
+
+          const accessToken = localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY);
+          if (!accessToken) throw new Error('Your customer session is unavailable.');
+          const account = await requestCustomerAuth('/auth/v1/user', { accessToken: accessToken });
+          const email = account && typeof account.email === 'string' ? account.email.trim() : '';
+          if (!email) throw new Error('The authenticated account does not have an email address.');
+
+          const query = new URLSearchParams({
+            select: 'id,business_id,service_id,variant_id,customer_email,agreed_price,payment_status,order_status,notes,created_at',
+            customer_email: 'eq.' + email,
+            order: 'created_at.desc'
+          });
+          const returnedOrders = await fetchCustomerRequestRows('/rest/v1/orders?' + query.toString(), accessToken);
+          const orders = returnedOrders.filter(order =>
+            typeof order.customer_email === 'string' &&
+            order.customer_email.trim().toLowerCase() === email.toLowerCase()
+          );
+          if (sequence !== customerRequestsLoadSequence) return;
+
+          const serviceIds = [...new Set(orders.map(order => order.service_id).filter(id => typeof id === 'string'))];
+          const variantIds = [...new Set(orders.map(order => order.variant_id).filter(id => typeof id === 'string'))];
+          const relatedQuery = ids => new URLSearchParams({
+            select: 'id,name,currency',
+            id: 'in.(' + ids.join(',') + ')'
+          }).toString();
+          const [services, variants] = await Promise.all([
+            serviceIds.length ? fetchCustomerRequestRows('/rest/v1/services?' + relatedQuery(serviceIds), accessToken) : [],
+            variantIds.length ? fetchCustomerRequestRows('/rest/v1/service_variants?' + relatedQuery(variantIds), accessToken) : []
+          ]);
+          if (sequence !== customerRequestsLoadSequence) return;
+
+          const servicesById = new Map(services.map(service => [service.id, service]));
+          const variantsById = new Map(variants.map(variant => [variant.id, variant]));
+          customerRequests = orders.map(order => {
+            const service = servicesById.get(order.service_id);
+            const variant = variantsById.get(order.variant_id);
+            return Object.assign({}, order, {
+              serviceName: service && service.name || 'Service no longer available',
+              variantName: variant && variant.name || 'Request details',
+              currency: variant && variant.currency || 'INR'
+            });
+          });
+
+          list.querySelectorAll('.request-card').forEach(card => card.remove());
+          customerRequests.forEach(order => list.appendChild(createCustomerOrderCard(order)));
+          list.dataset.loaded = 'true';
+          state.classList.remove('show');
+          const count = document.getElementById('requests-count');
+          count.textContent = String(customerRequests.length);
+          count.style.display = customerRequests.length === 0 ? 'none' : '';
+          const activeTab = document.querySelector('.status-tabs .tab-btn.active');
+          filterRequests(activeTab ? activeTab.dataset.filter : 'all');
+        } catch (error) {
+          if (sequence !== customerRequestsLoadSequence) return;
+          console.error('Unable to load the authenticated customer requests.', error);
+          list.dataset.loaded = 'false';
+          setCustomerRequestsState(
+            !navigator.onLine ? 'offline' : 'error',
+            !navigator.onLine ? 'You appear to be offline' : 'Requests could not be loaded',
+            !navigator.onLine ? 'Connect to the internet and try again.' : 'Check your connection and try again.',
+            true
+          );
+        }
+      }
+
+      function formatCustomerVariantPrice(price, currency) {
+        if (price === null || price === undefined || price === '') return 'Custom / Contact';
+        const numericPrice = Number(price);
+        if (!Number.isFinite(numericPrice)) return 'Contact for price';
+
+        const currencyCode = typeof currency === 'string' && /^[A-Z]{3}$/.test(currency.toUpperCase())
+          ? currency.toUpperCase()
+          : 'INR';
+        try {
+          return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: currencyCode,
+            maximumFractionDigits: 2
+          }).format(numericPrice);
+        } catch (error) {
+          return numericPrice.toLocaleString('en-IN') + ' ' + currencyCode;
+        }
+      }
+
+      function formatCustomerPaymentType(paymentType) {
+        if (typeof paymentType !== 'string' || !paymentType.trim()) return 'Payment terms to be confirmed';
+        const label = paymentType.trim().replace(/[_-]+/g, ' ');
+        return label.charAt(0).toUpperCase() + label.slice(1) + (label.toLowerCase() === 'full' ? ' payment' : '');
+      }
+
+      function mapCustomerServiceVariant(variant) {
+        return {
+          id: variant.id,
+          variantId: variant.id,
+          serviceId: variant.service_id,
+          name: variant.name,
+          rawPrice: variant.price,
+          price: formatCustomerVariantPrice(variant.price, variant.currency),
+          payment: formatCustomerPaymentType(variant.payment_type),
+          negotiable: variant.is_negotiable === true,
+          description: typeof variant.description === 'string' && variant.description.trim()
+            ? variant.description
+            : 'Details for this package will be confirmed with NovaTech.',
+          features: [],
+          image: getCustomerServiceImageUrl(variant.image_url)
+        };
+      }
+
+      async function loadCustomerServiceVariants(service) {
+        const requestSequence = ++customerVariantLoadSequence;
+        const packageList = document.getElementById('service-detail-packages');
+        const heading = document.querySelector('.service-packages-heading');
+        heading.textContent = 'Packages';
+        packageList.replaceChildren();
+
+        const loadingState = document.createElement('div');
+        loadingState.className = 'empty-state show';
+        appendTextElement(loadingState, 'span', 'empty-icon', '◌').setAttribute('aria-hidden', 'true');
+        appendTextElement(loadingState, 'strong', '', 'Loading packages');
+        appendTextElement(loadingState, 'p', '', 'Fetching available options for this service.');
+        packageList.appendChild(loadingState);
+
+        try {
+          let variants = customerServiceVariants.get(service.id);
+          if (!variants) {
+            const query = new URLSearchParams({
+              select: 'id,service_id,name,description,price,currency,payment_type,is_negotiable,is_active,created_at,image_url',
+              service_id: 'eq.' + service.id,
+              is_active: 'eq.true',
+              order: 'created_at.asc'
+            });
+            const rows = await fetchCustomerServiceRows('/rest/v1/service_variants?' + query.toString());
+            if (!Array.isArray(rows)) throw new Error('The service packages response was invalid.');
+            variants = rows.filter(variant =>
+              variant &&
+              variant.service_id === service.id &&
+              variant.is_active === true &&
+              typeof variant.id === 'string' &&
+              typeof variant.name === 'string'
+            ).map(mapCustomerServiceVariant);
+            customerServiceVariants.set(service.id, variants);
+          }
+
+          if (requestSequence !== customerVariantLoadSequence ||
+              document.getElementById('service-detail-modal').dataset.serviceId !== service.id) return;
+          service.packages = variants;
+          renderCustomerServiceVariants(service, variants);
+        } catch (error) {
+          console.error('Unable to load active packages for customer service.', error);
+          if (requestSequence !== customerVariantLoadSequence ||
+              document.getElementById('service-detail-modal').dataset.serviceId !== service.id) return;
+
+          const errorState = document.createElement('div');
+          errorState.className = 'empty-state show';
+          appendTextElement(errorState, 'span', 'empty-icon', '!').setAttribute('aria-hidden', 'true');
+          appendTextElement(errorState, 'strong', '', 'Packages could not be loaded');
+          appendTextElement(errorState, 'p', '', 'Check your connection and try again.');
+          errorState.appendChild(createServiceAction('Try Again', 'btn-outline', () => loadCustomerServiceVariants(service)));
+          packageList.replaceChildren(errorState);
+        }
+      }
+
+      function renderCustomerServiceVariants(service, variants) {
+        const packageList = document.getElementById('service-detail-packages');
+        const heading = document.querySelector('.service-packages-heading');
+        packageList.replaceChildren();
+        if (variants.length === 0) {
+          heading.textContent = 'Packages';
+          const emptyState = document.createElement('div');
+          emptyState.className = 'empty-state show';
+          appendTextElement(emptyState, 'span', 'empty-icon', '✦').setAttribute('aria-hidden', 'true');
+          appendTextElement(emptyState, 'strong', '', 'No active packages yet');
+          appendTextElement(emptyState, 'p', '', 'There are no active package options for this service right now.');
+          packageList.appendChild(emptyState);
+          return;
+        }
+
+        heading.textContent = 'Choose a package';
+        variants.forEach(variant => {
+          const card = document.createElement('article');
+          card.className = 'service-detail-package';
+          card.dataset.variantId = variant.id;
+
+          const variantImage = document.createElement('img');
+          variantImage.className = 'service-detail-image';
+          variantImage.src = variant.image;
+          variantImage.alt = variant.name + ' package preview';
+          variantImage.loading = 'lazy';
+          variantImage.onerror = () => {
+            variantImage.onerror = null;
+            variantImage.src = CUSTOMER_SERVICE_FALLBACK_IMAGE;
+          };
+          variantImage.style.height = '112px';
+          card.appendChild(variantImage);
+
+          const header = document.createElement('div');
+          header.className = 'service-detail-package-header';
+          const titleAndPrice = document.createElement('div');
+          appendTextElement(titleAndPrice, 'h5', '', variant.name);
+          appendTextElement(titleAndPrice, 'div', 'service-detail-price', variant.price);
+          header.appendChild(titleAndPrice);
+          card.appendChild(header);
+
+          const meta = document.createElement('div');
+          meta.className = 'service-detail-meta';
+          appendTextElement(meta, 'span', '', 'Payment: ' + variant.payment);
+          if (variant.negotiable) appendTextElement(meta, 'span', 'is-negotiable', 'Negotiable');
+          card.appendChild(meta);
+
+          appendTextElement(card, 'p', '', variant.description);
+          const actions = document.createElement('div');
+          actions.className = 'service-package-actions';
+          actions.appendChild(createServiceAction('Buy', 'btn-primary', () => handleCustomerAction('buy', service.id, variant.id)));
+          actions.appendChild(createServiceAction('Request Service', 'btn-outline', () => handleCustomerAction('request', service.id, variant.id)));
+          if (variant.negotiable) {
+            actions.appendChild(createServiceAction('Negotiate', 'btn-negotiate', () => handleCustomerAction('negotiate', service.id, variant.id)));
+          }
+          card.appendChild(actions);
+          packageList.appendChild(card);
+        });
+      }
+
+      function loadCustomerServices() {
+        if (customerServicesLoaded) return Promise.resolve();
+        if (customerServicesLoadPromise) return customerServicesLoadPromise;
+
+        setCustomerServicesState('loading', 'Loading services', 'Fetching available services for NovaTech Demo Business.');
+        customerServicesLoadPromise = (async () => {
+          try {
+            const businessQuery = new URLSearchParams({
+              select: 'id',
+              business_name: 'eq.' + CUSTOMER_DEMO_BUSINESS_NAME,
+              limit: '1'
+            });
+            const businesses = await fetchCustomerServiceRows('/rest/v1/businesses?' + businessQuery.toString());
+            if (!Array.isArray(businesses) || !businesses[0] || typeof businesses[0].id !== 'string') {
+              throw new Error('The configured demo business could not be found.');
+            }
+
+            const serviceQuery = new URLSearchParams({
+              select: 'id,business_id,name,description,image_url,is_active',
+              business_id: 'eq.' + businesses[0].id,
+              is_active: 'eq.true',
+              order: 'created_at.asc'
+            });
+            const rows = await fetchCustomerServiceRows('/rest/v1/services?' + serviceQuery.toString());
+            if (!Array.isArray(rows)) throw new Error('The customer services response was invalid.');
+
+            const services = rows.filter(service =>
+              service &&
+              service.business_id === businesses[0].id &&
+              service.is_active === true &&
+              typeof service.id === 'string' &&
+              typeof service.name === 'string'
+            ).map(service => ({
+              id: service.id,
+              businessId: service.business_id,
+              name: service.name,
+              description: typeof service.description === 'string' ? service.description : '',
+              image: getCustomerServiceImageUrl(service.image_url),
+              isBackendService: true,
+              packages: []
+            }));
+
+            renderCustomerServices(services);
+            customerServicesLoaded = true;
+          } catch (error) {
+            console.error('Unable to load customer services from Supabase.', error);
+            setCustomerServicesState('error', 'Services could not be loaded', 'Check your connection and try again.');
+          } finally {
+            customerServicesLoadPromise = null;
+          }
+        })();
+        return customerServicesLoadPromise;
       }
 
       const CUSTOMER_SUPABASE_URL = 'https://kiyasgbtlrgwfkgzsbcb.supabase.co';
@@ -3146,18 +3652,42 @@
       }
 
       function openServiceDetail(serviceId) {
-        const service = customerServiceCatalog[serviceId];
+        const service = activeCustomerServices.get(serviceId) || customerServiceCatalog[serviceId];
         if (!service) throw new Error('Unknown customer service: ' + serviceId);
 
+        document.getElementById('service-detail-modal').dataset.serviceId = service.id;
         document.getElementById('service-detail-title').textContent = service.name;
         document.getElementById('service-detail-name').textContent = service.name;
         document.getElementById('service-detail-description').textContent = service.description;
         const image = document.getElementById('service-detail-image');
+        image.onerror = () => {
+          image.onerror = null;
+          image.src = CUSTOMER_SERVICE_FALLBACK_IMAGE;
+        };
         image.src = service.image;
         image.alt = service.name + ' service preview';
 
+        if (service.isBackendService) {
+          document.getElementById('service-detail-modal').classList.remove('hidden');
+          loadCustomerServiceVariants(service);
+          return;
+        }
+
         const packageList = document.getElementById('service-detail-packages');
+        const packageHeading = document.querySelector('.service-packages-heading');
         packageList.replaceChildren();
+        if (service.packages.length === 0) {
+          packageHeading.textContent = 'Packages';
+          const emptyState = document.createElement('div');
+          emptyState.className = 'empty-state show';
+          appendTextElement(emptyState, 'span', 'empty-icon', '✦').setAttribute('aria-hidden', 'true');
+          appendTextElement(emptyState, 'strong', '', 'Packages coming soon');
+          appendTextElement(emptyState, 'p', '', 'Package options for this service will be available soon.');
+          packageList.appendChild(emptyState);
+          document.getElementById('service-detail-modal').classList.remove('hidden');
+          return;
+        }
+        packageHeading.textContent = 'Choose a package';
         service.packages.forEach(packageOption => {
           const card = document.createElement('article');
           card.className = 'service-detail-package' + (packageOption.featured ? ' featured' : '');
@@ -3201,32 +3731,148 @@
       }
 
       function openCustomerRequest(service, packageOption) {
+        const modal = document.getElementById('customer-request-modal');
+        modal.dataset.serviceId = service.id;
+        modal.dataset.serviceVariantId = packageOption.variantId || '';
         document.getElementById('customer-request-title').textContent = 'Request ' + service.name;
         document.getElementById('customer-request-context').textContent = service.name + ' · ' + packageOption.name;
         document.getElementById('customer-request-form').reset();
         const status = document.getElementById('customer-request-status');
         status.textContent = '';
         status.classList.remove('is-visible');
-        document.getElementById('customer-request-modal').classList.remove('hidden');
+        modal.classList.remove('hidden');
       }
 
       function closeCustomerRequest() {
+        if (customerRequestSubmissionInProgress) return;
         document.getElementById('customer-request-modal').classList.add('hidden');
       }
 
-      function handleCustomerRequestSubmit(e) {
-        e.preventDefault();
+      let customerRequestSubmissionInProgress = false;
+
+      function setCustomerRequestStatus(message) {
         const status = document.getElementById('customer-request-status');
-        status.textContent = 'This form is a frontend preview. Your details have not been sent.';
+        status.textContent = message;
         status.classList.add('is-visible');
       }
 
+      async function handleCustomerRequestSubmit(e) {
+        e.preventDefault();
+        if (customerRequestSubmissionInProgress) return;
+
+        const form = document.getElementById('customer-request-form');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const modal = document.getElementById('customer-request-modal');
+        const serviceId = modal.dataset.serviceId;
+        const variantId = modal.dataset.serviceVariantId;
+        const service = customerServiceCatalog[serviceId];
+        const packageOption = service && service.packages.find(option =>
+          option.variantId === variantId && option.serviceId === service.id
+        );
+
+        if (!service || !service.isBackendService || !service.businessId || !packageOption) {
+          setCustomerRequestStatus('This service package is no longer available. Return to Services and choose an active package.');
+          return;
+        }
+
+        customerRequestSubmissionInProgress = true;
+        submitButton.disabled = true;
+        submitButton.dataset.originalText = submitButton.textContent;
+        submitButton.textContent = 'Submitting...';
+        setCustomerRequestStatus('Submitting your request securely...');
+
+        try {
+          await customerAuthInitialization;
+          const authenticated = await verifyCustomerSession();
+          if (!authenticated) {
+            setCustomerRequestStatus('Please log in to submit your service request.');
+            handleCustomerAction('request', service.id, packageOption.id);
+            return;
+          }
+
+          const accessToken = localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY);
+          if (!accessToken) throw new Error('Your session has expired. Please log in again.');
+
+          const account = await requestCustomerAuth('/auth/v1/user', { accessToken: accessToken });
+          const formData = new FormData(form);
+          const accountEmail = account && typeof account.email === 'string' && account.email.trim()
+            ? account.email.trim()
+            : '';
+          const customerEmail = accountEmail || String(formData.get('email') || '').trim();
+          const requirement = String(formData.get('requirement') || '').trim();
+          const additionalNotes = String(formData.get('notes') || '').trim();
+          const notes = additionalNotes
+            ? 'Requirement:\n' + requirement + '\n\nAdditional notes:\n' + additionalNotes
+            : requirement;
+
+          const order = {
+            business_id: service.businessId,
+            service_id: service.id,
+            variant_id: packageOption.variantId,
+            customer_name: String(formData.get('customerName') || '').trim(),
+            customer_email: customerEmail || null,
+            customer_phone: String(formData.get('phone') || '').trim(),
+            agreed_price: packageOption.rawPrice === null || packageOption.rawPrice === undefined
+              ? null
+              : packageOption.rawPrice,
+            payment_status: 'pending',
+            order_status: 'pending',
+            notes: notes
+          };
+
+          const response = await fetch(CUSTOMER_SUPABASE_URL + '/rest/v1/orders', {
+            method: 'POST',
+            headers: {
+              apikey: CUSTOMER_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: 'Bearer ' + accessToken,
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              Prefer: 'return=representation'
+            },
+            body: JSON.stringify(order)
+          });
+
+          if (!response.ok) {
+            let errorDetails = {};
+            try {
+              errorDetails = await response.json();
+            } catch (error) {
+              errorDetails = {};
+            }
+            console.error('Customer service request insert failed.', {
+              httpStatus: response.status,
+              errorCode: errorDetails.code || null
+            });
+            if (response.status === 401 || response.status === 403) {
+              throw new Error('Your request could not be submitted with this session. Please log in again or contact NovaTech.');
+            }
+            throw new Error('We could not submit your request. Please check your connection and try again.');
+          }
+
+          form.reset();
+          setCustomerRequestStatus('Your service request has been submitted successfully.');
+        } catch (error) {
+          console.error('Unable to submit the customer service request.', error);
+          setCustomerRequestStatus(error instanceof TypeError
+            ? 'Unable to connect to NovaTech. Check your connection and try again.'
+            : error.message || 'We could not submit your request. Please try again.');
+        } finally {
+          customerRequestSubmissionInProgress = false;
+          submitButton.disabled = false;
+          submitButton.textContent = submitButton.dataset.originalText || 'Submit Request';
+          delete submitButton.dataset.originalText;
+        }
+      }
+
       function openBuyPreview(service, packageOption) {
+        const modal = document.getElementById('buy-preview-modal');
+        modal.dataset.serviceId = service.id;
+        modal.dataset.serviceVariantId = packageOption.variantId || '';
         const context = document.getElementById('buy-preview-context');
         context.replaceChildren();
         appendTextElement(context, 'strong', '', service.name + ' · ' + packageOption.name + ' · ' + packageOption.price);
         appendTextElement(context, 'span', '', 'Your package is selected. Checkout will be added in a later step.');
-        document.getElementById('buy-preview-modal').classList.remove('hidden');
+        modal.classList.remove('hidden');
       }
 
       function closeBuyPreview() {
@@ -3235,12 +3881,15 @@
 
       function openNegotiation(service, packageOption) {
         if (!packageOption.negotiable) throw new Error('Negotiation is not available for this package.');
+        const modal = document.getElementById('negotiation-modal');
+        modal.dataset.serviceId = service.id;
+        modal.dataset.serviceVariantId = packageOption.variantId || '';
         document.getElementById('negotiation-context').textContent = service.name + ' · ' + packageOption.name + ' · ' + packageOption.price;
         document.getElementById('negotiation-form').reset();
         const status = document.getElementById('negotiation-status');
         status.textContent = '';
         status.classList.remove('is-visible');
-        document.getElementById('negotiation-modal').classList.remove('hidden');
+        modal.classList.remove('hidden');
       }
 
       function closeNegotiation() {
@@ -3326,6 +3975,16 @@
         captureCustomerAuthCallbackSession();
         return initializeCustomerSession();
       })();
+      const customerAuthModal = document.getElementById('customer-auth-modal');
+      const customerRequestsAuthObserver = new MutationObserver(() => {
+        if (customerAuthModal.classList.contains('hidden') &&
+            customerSessionAuthenticated &&
+            document.getElementById('screen-requests').classList.contains('active')) {
+          loadCustomerRequests();
+        }
+      });
+      customerRequestsAuthObserver.observe(customerAuthModal, { attributes: true, attributeFilter: ['class'] });
+      loadCustomerServices();
     </script>
     <script src="script.js"></script>
   </body>
