@@ -3795,10 +3795,10 @@
 
           const account = await requestCustomerAuth('/auth/v1/user', { accessToken: accessToken });
           const formData = new FormData(form);
-          const accountEmail = account && typeof account.email === 'string' && account.email.trim()
-            ? account.email.trim()
-            : '';
-          const customerEmail = accountEmail || String(formData.get('email') || '').trim();
+          const customerEmail = account && typeof account.email === 'string' ? account.email.trim() : '';
+          if (!customerEmail) {
+            throw new Error('We could not confirm the email for your signed-in account. Please log in again and retry.');
+          }
           const requirement = String(formData.get('requirement') || '').trim();
           const additionalNotes = String(formData.get('notes') || '').trim();
           const notes = additionalNotes
@@ -3810,7 +3810,7 @@
             service_id: service.id,
             variant_id: packageOption.variantId,
             customer_name: String(formData.get('customerName') || '').trim(),
-            customer_email: customerEmail || null,
+            customer_email: customerEmail,
             customer_phone: String(formData.get('phone') || '').trim(),
             agreed_price: packageOption.rawPrice === null || packageOption.rawPrice === undefined
               ? null
