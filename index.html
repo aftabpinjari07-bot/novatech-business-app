@@ -2895,13 +2895,13 @@
 
           const serviceIds = [...new Set(orders.map(order => order.service_id).filter(id => typeof id === 'string'))];
           const variantIds = [...new Set(orders.map(order => order.variant_id).filter(id => typeof id === 'string'))];
-          const relatedQuery = ids => new URLSearchParams({
-            select: 'id,name,currency',
+          const relatedQuery = (ids, columns) => new URLSearchParams({
+            select: columns,
             id: 'in.(' + ids.join(',') + ')'
           }).toString();
           const [services, variants] = await Promise.all([
-            serviceIds.length ? fetchCustomerRequestRows('/rest/v1/services?' + relatedQuery(serviceIds), accessToken) : [],
-            variantIds.length ? fetchCustomerRequestRows('/rest/v1/service_variants?' + relatedQuery(variantIds), accessToken) : []
+            serviceIds.length ? fetchCustomerRequestRows('/rest/v1/services?' + relatedQuery(serviceIds, 'id,name'), accessToken) : [],
+            variantIds.length ? fetchCustomerRequestRows('/rest/v1/service_variants?' + relatedQuery(variantIds, 'id,name,currency'), accessToken) : []
           ]);
           if (sequence !== customerRequestsLoadSequence) return;
 
@@ -3323,15 +3323,17 @@
         }
       }
 
-      async function verifyCustomerSession() {
+      async function verifyCustomerSession(diagnostics) {
         const accessToken = localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY);
         if (!accessToken) {
+          if (diagnostics) diagnostics.failureStep = 'missing_access_token';
           customerSessionAuthenticated = false;
           return false;
         }
 
         const expiresAt = Number(localStorage.getItem(CUSTOMER_EXPIRES_AT_KEY));
         if (Number.isFinite(expiresAt) && expiresAt <= Date.now() + 60000) {
+          if (diagnostics) diagnostics.refreshAttempted = true;
           const refreshed = await refreshCustomerSession();
           if (!refreshed) return false;
         }
@@ -3343,6 +3345,7 @@
           return true;
         } catch (error) {
           if (error instanceof CustomerAuthError && error.status === 401) {
+            if (diagnostics) diagnostics.refreshAttempted = true;
             const refreshed = await refreshCustomerSession();
             if (!refreshed) return false;
             await requestCustomerAuth('/auth/v1/user', {
@@ -3781,10 +3784,26 @@
         submitButton.textContent = 'Submitting...';
         setCustomerRequestStatus('Submitting your request securely...');
 
+        const sessionDiagnostics = {
+          customerSessionAuthenticated: customerSessionAuthenticated,
+          accessTokenPresent: Boolean(localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY)),
+          refreshAttempted: false,
+          authUserRequestSucceeded: false,
+          authenticatedUserEmail: '',
+          finalCustomerEmailPresent: false,
+          failureStep: 'session_verification'
+        };
+
         try {
           await customerAuthInitialization;
-          const authenticated = await verifyCustomerSession();
+          sessionDiagnostics.customerSessionAuthenticated = customerSessionAuthenticated;
+          sessionDiagnostics.accessTokenPresent = Boolean(localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY));
+          const authenticated = await verifyCustomerSession(sessionDiagnostics);
+          sessionDiagnostics.customerSessionAuthenticated = customerSessionAuthenticated;
+          sessionDiagnostics.accessTokenPresent = Boolean(localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY));
           if (!authenticated) {
+            sessionDiagnostics.failureStep = 'session_not_authenticated';
+            console.info('[customer-request-session-debug]', sessionDiagnostics);
             setCustomerRequestStatus('Please log in to submit your service request.');
             handleCustomerAction('request', service.id, packageOption.id);
             return;
@@ -3793,7 +3812,9 @@
           const accessToken = localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY);
           if (!accessToken) throw new Error('Your session has expired. Please log in again.');
 
+          sessionDiagnostics.failureStep = 'authenticated_user_lookup';
           const account = await requestCustomerAuth('/auth/v1/user', { accessToken: accessToken });
+          sessionDiagnostics.authUserRequestSucceeded = true;
           const formData = new FormData(form);
           const authenticatedUserEmail = account && typeof account.email === 'string'
             ? account.email.trim()
@@ -3805,6 +3826,8 @@
                   ? account.data.user.email.trim()
                   : '';
           const customerEmail = authenticatedUserEmail;
+          sessionDiagnostics.authenticatedUserEmail = authenticatedUserEmail;
+          sessionDiagnostics.finalCustomerEmailPresent = Boolean(customerEmail);
           if (!customerEmail) {
             throw new Error('We could not confirm the email for your signed-in account. Please log in again and retry.');
           }
@@ -3829,10 +3852,9 @@
             notes: notes
           };
 
-          console.info('[customer-request-insert-debug]', {
-            accessTokenPresent: Boolean(accessToken),
-            authenticatedUserEmail: authenticatedUserEmail,
-            finalCustomerEmail: order.customer_email,
+          sessionDiagnostics.failureStep = 'orders_insert';
+          console.info('[customer-request-session-debug]', {
+            ...sessionDiagnostics,
             orderPayload: Object.assign({}, order)
           });
 
@@ -3855,12 +3877,16 @@
             } catch (error) {
               errorDetails = {};
             }
-            console.error('Customer service request insert failed.', {
+            console.error('[customer-request-insert-response]', {
               httpStatus: response.status,
-              errorCode: errorDetails.code || null
+              errorCode: errorDetails.code || null,
+              errorMessage: errorDetails.message || errorDetails.details || null
             });
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
               throw new Error('Your request could not be submitted with this session. Please log in again or contact NovaTech.');
+            }
+            if (response.status === 403) {
+              throw new Error('Your session was verified, but NovaTech did not authorize this request. Please contact support.');
             }
             throw new Error('We could not submit your request. Please check your connection and try again.');
           }
@@ -3886,6 +3912,12 @@
           form.reset();
           setCustomerRequestStatus('Your service request has been submitted successfully.');
         } catch (error) {
+          console.info('[customer-request-session-debug]', {
+            ...sessionDiagnostics,
+            customerSessionAuthenticated: customerSessionAuthenticated,
+            accessTokenPresent: Boolean(localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY)),
+            error: error instanceof CustomerAuthError ? 'customer_auth_error' : error instanceof TypeError ? 'network_error' : 'request_error'
+          });
           console.error('Unable to submit the customer service request.', error);
           setCustomerRequestStatus(error instanceof TypeError
             ? 'Unable to connect to NovaTech. Check your connection and try again.'
