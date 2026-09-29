@@ -3795,7 +3795,16 @@
 
           const account = await requestCustomerAuth('/auth/v1/user', { accessToken: accessToken });
           const formData = new FormData(form);
-          const customerEmail = account && typeof account.email === 'string' ? account.email.trim() : '';
+          const authenticatedUserEmail = account && typeof account.email === 'string'
+            ? account.email.trim()
+            : account && account.user && typeof account.user.email === 'string'
+              ? account.user.email.trim()
+              : account && account.data && typeof account.data.email === 'string'
+                ? account.data.email.trim()
+                : account && account.data && account.data.user && typeof account.data.user.email === 'string'
+                  ? account.data.user.email.trim()
+                  : '';
+          const customerEmail = authenticatedUserEmail;
           if (!customerEmail) {
             throw new Error('We could not confirm the email for your signed-in account. Please log in again and retry.');
           }
@@ -3819,6 +3828,13 @@
             order_status: 'pending',
             notes: notes
           };
+
+          console.info('[customer-request-insert-debug]', {
+            accessTokenPresent: Boolean(accessToken),
+            authenticatedUserEmail: authenticatedUserEmail,
+            finalCustomerEmail: order.customer_email,
+            orderPayload: Object.assign({}, order)
+          });
 
           const response = await fetch(CUSTOMER_SUPABASE_URL + '/rest/v1/orders', {
             method: 'POST',
@@ -3847,6 +3863,24 @@
               throw new Error('Your request could not be submitted with this session. Please log in again or contact NovaTech.');
             }
             throw new Error('We could not submit your request. Please check your connection and try again.');
+          }
+
+          let insertedOrders;
+          try {
+            insertedOrders = await response.json();
+          } catch (error) {
+            throw new Error('Supabase accepted the request but did not return an order confirmation. Please check My Requests before submitting again.');
+          }
+          if (!Array.isArray(insertedOrders) ||
+              !insertedOrders[0] ||
+              insertedOrders[0].customer_email !== customerEmail) {
+            console.error('Customer service request confirmation did not contain the authenticated email.', {
+              insertedOrderReturned: Array.isArray(insertedOrders) && Boolean(insertedOrders[0]),
+              returnedCustomerEmailMatches: Array.isArray(insertedOrders) &&
+                Boolean(insertedOrders[0]) &&
+                insertedOrders[0].customer_email === customerEmail
+            });
+            throw new Error('Supabase accepted the request but could not confirm its customer email. Please check My Requests before submitting again.');
           }
 
           form.reset();
