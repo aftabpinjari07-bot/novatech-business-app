@@ -1,0 +1,211 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: Arial, sans-serif;
+  background: #f4f7fb;
+  color: #111827;
+}
+
+.admin-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+
+.admin-login {
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 16px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.login-mascot {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  color: #2563eb;
+}
+
+.login-mascot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mascot-ear,
+.mascot-face {
+  fill: #eff6ff;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mascot-cheek,
+.mascot-eye-open ellipse,
+.mascot-eye-closed path,
+.mascot-nose {
+  fill: none;
+  stroke: #1e3a8a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mascot-eye-open ellipse {
+  fill: #1e3a8a;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms ease;
+}
+
+.mascot-eye-closed {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mascot-eye-closed path {
+  transform: scaleY(0);
+  transition: transform 200ms ease;
+}
+
+.login-mascot.is-looking-away .mascot-eye-open ellipse {
+  transform: scaleY(0.1);
+}
+
+.login-mascot.is-looking-away .mascot-eye-closed path {
+  transform: scaleY(1);
+}
+
+.admin-login h1 {
+  margin-bottom: 8px;
+}
+
+.admin-login > p {
+  margin-bottom: 24px;
+  color: #6b7280;
+}
+
+.input-group {
+  margin-bottom: 18px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 14px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  font-size: 15px;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input#admin-password {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.password-icon-hide {
+  display: none;
+}
+
+.password-toggle[aria-pressed="true"] .password-icon-show {
+  display: none;
+}
+
+.password-toggle[aria-pressed="true"] .password-icon-hide {
+  display: block;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.admin-btn {
+  width: 100%;
+  padding: 12px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #2563eb;
+  color: white;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.admin-btn:hover {
+  background: #1d4ed8;
+}
+
+#login-message {
+  margin-top: 16px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-eye-open ellipse,
+  .mascot-eye-closed path {
+    transition: none;
+  }
+}

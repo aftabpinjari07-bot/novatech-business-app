@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>NovaTech Admin Dashboard</title>
+
+  <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <a class="sidebar-brand" href="#" aria-label="NovaTech Business Panel home">
+        <span class="brand-mark" aria-hidden="true">N</span>
+        <span class="brand-copy">
+          <strong>NovaTech</strong>
+          <span>Business Panel</span>
+        </span>
+      </a>
+
+      <nav class="sidebar-nav" aria-label="Main navigation">
+        <span class="nav-label">Workspace</span>
+        <button class="nav-item active" type="button" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg>
+          <span>Business Profile</span>
+        </button>
+        <button class="nav-item" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8.5 4.5v9L12 21l-8.5-4.5v-9L12 3Z"></path><path d="m3.8 7.7 8.2 4.5 8.2-4.5M12 12.2V21"></path></svg>
+          <span>Services</span>
+        </button>
+        <button class="nav-item" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h16v13H4z"></path><path d="M8 7.5V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2.5M4 12h16M10 12v2h4v-2"></path></svg>
+          <span>Packages &amp; Pricing</span>
+        </button>
+        <button class="nav-item" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4z"></path><path d="M8 3.5v4M16 3.5v4M4 10h16M8 14h3M8 17h6"></path></svg>
+          <span>Orders</span>
+        </button>
+        <button class="nav-item" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v12H9l-5 3v-15Z"></path><path d="M8 10h8M8 13.5h5"></path></svg>
+          <span>Messages</span>
+        </button>
+      </nav>
+
+      <button id="logout-btn" class="logout-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10M14 8l4 4-4 4M18 12H9"></path></svg>
+        <span>Logout</span>
+      </button>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="dashboard-topbar">
+        <div>
+          <p class="eyebrow">Business overview</p>
+          <h1>Welcome back</h1>
+          <p class="page-subtitle">Here’s what’s happening with your business today.</p>
+        </div>
+      </header>
+
+      <section class="dashboard-overview" aria-label="Business statistics">
+        <article class="stat-card">
+          <span class="stat-icon services-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m12 3 8.5 4.5v9L12 21l-8.5-4.5v-9L12 3Z"></path><path d="m3.8 7.7 8.2 4.5 8.2-4.5M12 12.2V21"></path></svg>
+          </span>
+          <div class="stat-copy"><span>Services</span><strong>0</strong></div>
+          <span class="stat-note">Available offerings</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon orders-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 5.5h16v15H4z"></path><path d="M8 3.5v4M16 3.5v4M4 10h16M8 14h3M8 17h6"></path></svg>
+          </span>
+          <div class="stat-copy"><span>Orders</span><strong>0</strong></div>
+          <span class="stat-note">Customer requests</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon messages-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 5.5h16v12H9l-5 3v-15Z"></path><path d="M8 10h8M8 13.5h5"></path></svg>
+          </span>
+          <div class="stat-copy"><span>Messages</span><strong>0</strong></div>
+          <span class="stat-note">Customer inquiries</span>
+        </article>
+        <article class="stat-card">
+          <span class="stat-icon packages-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7.5h16v13H4z"></path><path d="M8 7.5V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2.5M4 12h16M10 12v2h4v-2"></path></svg>
+          </span>
+          <div class="stat-copy"><span>Active Packages</span><strong>0</strong></div>
+          <span class="stat-note">Ready for customers</span>
+        </article>
+      </section>
+
+      <section class="dashboard-card" aria-labelledby="messages-heading">
+        <div class="card-header">
+          <div>
+            <h2 id="messages-heading">Recent Messages</h2>
+            <p>Latest customer inquiries</p>
+          </div>
+          <span id="message-count">0 messages</span>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Phone</th>
+                <th scope="col">Message</th>
+                <th scope="col">Date</th>
+              </tr>
+            </thead>
+            <tbody id="messages-table-body">
+              <tr>
+                <td colspan="5" class="empty-message">Loading messages...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="admin-dashboard.js"></script>
+</body>
+</html>
