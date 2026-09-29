@@ -2750,6 +2750,43 @@
         customerSessionAuthenticated = true;
       }
 
+      function captureCustomerAuthCallbackSession() {
+        const callbackUrl = new URL(window.location.href);
+        const hashParams = new URLSearchParams(callbackUrl.hash.slice(1));
+        const callbackValue = name => hashParams.get(name) || callbackUrl.searchParams.get(name);
+        const accessToken = callbackValue('access_token');
+        if (!accessToken) return false;
+
+        const session = {
+          access_token: accessToken,
+          refresh_token: callbackValue('refresh_token') || ''
+        };
+        const expiresIn = Number(callbackValue('expires_in'));
+        const expiresAt = Number(callbackValue('expires_at'));
+        if (Number.isFinite(expiresIn) && expiresIn > 0) session.expires_in = expiresIn;
+        if (Number.isFinite(expiresAt) && expiresAt > 0) session.expires_at = expiresAt;
+
+        try {
+          storeCustomerSession(session);
+        } finally {
+          const authCallbackParams = [
+            'access_token',
+            'refresh_token',
+            'expires_in',
+            'expires_at',
+            'token_type',
+            'type'
+          ];
+          authCallbackParams.forEach(name => {
+            callbackUrl.searchParams.delete(name);
+            hashParams.delete(name);
+          });
+          callbackUrl.hash = hashParams.toString();
+          window.history.replaceState(window.history.state, '', callbackUrl.pathname + callbackUrl.search + callbackUrl.hash);
+        }
+        return true;
+      }
+
       function clearCustomerSession() {
         localStorage.removeItem(CUSTOMER_ACCESS_TOKEN_KEY);
         localStorage.removeItem(CUSTOMER_REFRESH_TOKEN_KEY);
@@ -2837,15 +2874,31 @@
           throw new Error('Unknown customer action: ' + action);
         }
 
-        localStorage.setItem(CUSTOMER_PENDING_ACTION_KEY, JSON.stringify({
+        const pendingAction = {
           action: action,
           serviceId: service.id,
           packageId: packageOption.id,
           timestamp: Date.now()
-        }));
+        };
+        localStorage.setItem(CUSTOMER_PENDING_ACTION_KEY, JSON.stringify(pendingAction));
         customerAuthInitialization.then(async () => {
           try {
+            const savedAction = localStorage.getItem(CUSTOMER_PENDING_ACTION_KEY);
+            if (!savedAction) return;
+            const currentAction = JSON.parse(savedAction);
+            if (currentAction.action !== pendingAction.action ||
+                currentAction.serviceId !== pendingAction.serviceId ||
+                currentAction.packageId !== pendingAction.packageId ||
+                currentAction.timestamp !== pendingAction.timestamp) return;
+
             if (await verifyCustomerSession()) {
+              const latestAction = localStorage.getItem(CUSTOMER_PENDING_ACTION_KEY);
+              if (!latestAction) return;
+              const latestPendingAction = JSON.parse(latestAction);
+              if (latestPendingAction.action !== pendingAction.action ||
+                  latestPendingAction.serviceId !== pendingAction.serviceId ||
+                  latestPendingAction.packageId !== pendingAction.packageId ||
+                  latestPendingAction.timestamp !== pendingAction.timestamp) return;
               localStorage.removeItem(CUSTOMER_PENDING_ACTION_KEY);
               dispatchCustomerAction(action, service, packageOption);
               return;
@@ -3269,7 +3322,10 @@
       const modalObserver = new MutationObserver(syncBodyLock);
       modalBackdrops.forEach(b => modalObserver.observe(b, { attributes: true, attributeFilter: ['class'] }));
       syncBodyLock();
-      customerAuthInitialization = initializeCustomerSession();
+      customerAuthInitialization = (async () => {
+        captureCustomerAuthCallbackSession();
+        return initializeCustomerSession();
+      })();
     </script>
     <script src="script.js"></script>
   </body>
