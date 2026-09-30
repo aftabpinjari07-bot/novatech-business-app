@@ -964,6 +964,30 @@
 
       .flow-status.is-visible { display: block; }
 
+      .customer-negotiation-toast {
+        position: fixed;
+        z-index: 100;
+        right: 18px;
+        bottom: calc(84px + env(safe-area-inset-bottom));
+        left: 18px;
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 12px 14px;
+        border: 1px solid var(--brand-line);
+        border-radius: var(--r-md);
+        background: #F0F7F2;
+        box-shadow: 0 12px 30px rgba(22, 39, 72, .18);
+        color: #245B38;
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(10px);
+        transition: opacity .2s ease, transform .2s ease;
+      }
+
+      .customer-negotiation-toast.is-visible { opacity: 1; transform: translateY(0); }
+
       .negotiation-preview { padding: 18px; }
 
       .negotiation-message {
@@ -2290,12 +2314,12 @@
         </div>
       </div>
 
-      <!-- ============ MODAL: Negotiation UI Preview ============ -->
+      <!-- ============ MODAL: Negotiation Request ============ -->
       <div id="negotiation-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="negotiation-title">
         <div class="modal-content">
           <div class="modal-header">
             <div>
-              <small class="text-muted">Negotiation preview</small>
+              <small class="text-muted">Negotiation request</small>
               <h3 id="negotiation-title">Discuss this package</h3>
             </div>
             <button class="close-btn" onclick="closeNegotiation()" aria-label="Close negotiation">&times;</button>
@@ -2303,14 +2327,14 @@
           <p id="negotiation-context" class="flow-context"></p>
           <div class="negotiation-preview">
             <div class="negotiation-message">
-              <strong>NovaTech negotiation assistant</strong>
-              Negotiation will follow business-defined pricing rules. The assistant is not connected yet.
+              <strong>NovaTech team</strong>
+              Your request and optional offer will be sent to the team for review.
             </div>
           </div>
           <form id="negotiation-form" class="customer-flow-form" onsubmit="handleNegotiationSubmit(event)">
             <div class="input-group">
               <label for="negotiation-offer">Your proposed price <span class="text-muted">Optional · ₹ INR</span></label>
-              <input id="negotiation-offer" name="offer" type="number" min="0" step="1" placeholder="Enter an offer" />
+              <input id="negotiation-offer" name="offer" type="number" min="0" step="0.01" placeholder="Enter an offer" />
             </div>
             <div class="input-group">
               <label for="negotiation-message">Message <span class="text-muted">Optional</span></label>
@@ -2318,12 +2342,13 @@
             </div>
             <div class="modal-actions">
               <button type="button" class="btn btn-outline" onclick="closeNegotiation()">Cancel</button>
-              <button type="submit" class="btn btn-negotiate">Prepare Offer</button>
+              <button type="submit" class="btn btn-negotiate">Send Request</button>
             </div>
           </form>
           <p id="negotiation-status" class="flow-status" role="status" aria-live="polite"></p>
         </div>
       </div>
+      <p id="customer-negotiation-toast" class="customer-negotiation-toast" role="status" aria-live="polite"></p>
 
       <!-- ============ MODAL: Request Details View ============ -->
       <div id="details-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
@@ -3945,9 +3970,29 @@
         document.getElementById('buy-preview-modal').classList.add('hidden');
       }
 
+      let customerNegotiationSubmissionInProgress = false;
+      let customerNegotiationToastTimer = null;
+
+      function showCustomerNegotiationToast(message) {
+        const toast = document.getElementById('customer-negotiation-toast');
+        toast.textContent = message;
+        toast.classList.add('is-visible');
+        window.clearTimeout(customerNegotiationToastTimer);
+        customerNegotiationToastTimer = window.setTimeout(() => {
+          toast.classList.remove('is-visible');
+        }, 5000);
+      }
+
       function openNegotiation(service, packageOption) {
         if (!packageOption.negotiable) throw new Error('Negotiation is not available for this package.');
         const modal = document.getElementById('negotiation-modal');
+        const samePendingPackage = modal.dataset.serviceId === service.id &&
+          modal.dataset.serviceVariantId === packageOption.variantId;
+        if (!samePendingPackage) {
+          delete modal.dataset.pendingNegotiationId;
+          delete modal.dataset.pendingCustomerId;
+          delete modal.dataset.pendingMessageRequired;
+        }
         modal.dataset.serviceId = service.id;
         modal.dataset.serviceVariantId = packageOption.variantId || '';
         document.getElementById('negotiation-context').textContent = service.name + ' · ' + packageOption.name + ' · ' + packageOption.price;
@@ -3962,11 +4007,241 @@
         document.getElementById('negotiation-modal').classList.add('hidden');
       }
 
-      function handleNegotiationSubmit(e) {
+      async function postCustomerNegotiationRow(table, payload, accessToken, returnRow) {
+        const query = returnRow ? '?select=id' : '';
+        let response;
+        try {
+          response = await fetch(CUSTOMER_SUPABASE_URL + '/rest/v1/' + table + query, {
+            method: 'POST',
+            headers: {
+              apikey: CUSTOMER_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: 'Bearer ' + accessToken,
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              Prefer: returnRow ? 'return=representation' : 'return=minimal'
+            },
+            body: JSON.stringify(payload)
+          });
+        } catch (error) {
+          console.error('[customer-negotiation-backend-request]', {
+            table: table,
+            httpStatus: null,
+            errorCode: null,
+            errorMessage: 'Network request failed',
+            accessTokenPresent: Boolean(accessToken)
+          });
+          throw new Error('network');
+        }
+
+        if (!response.ok) {
+          let details = {};
+          try {
+            details = await response.json();
+          } catch (error) {
+            details = {};
+          }
+          console.error('[customer-negotiation-backend-request]', {
+            table: table,
+            httpStatus: response.status,
+            errorCode: details.code || details.error_code || null,
+            errorMessage: details.message || details.details || null,
+            accessTokenPresent: Boolean(accessToken)
+          });
+          throw new Error('backend');
+        }
+
+        if (!returnRow) {
+          console.info('[customer-negotiation-backend-request]', {
+            table: table,
+            httpStatus: response.status,
+            errorCode: null,
+            errorMessage: null,
+            accessTokenPresent: Boolean(accessToken)
+          });
+          return null;
+        }
+
+        let rows;
+        try {
+          rows = await response.json();
+        } catch (error) {
+          console.error('[customer-negotiation-backend-request]', {
+            table: table,
+            httpStatus: response.status,
+            errorCode: null,
+            errorMessage: 'The successful response did not contain a readable confirmation',
+            accessTokenPresent: Boolean(accessToken)
+          });
+          throw new Error('confirmation');
+        }
+        if (!Array.isArray(rows) || !rows[0] || typeof rows[0].id !== 'string') {
+          console.error('[customer-negotiation-backend-request]', {
+            table: table,
+            httpStatus: response.status,
+            errorCode: null,
+            errorMessage: 'The successful response did not contain a negotiation ID',
+            accessTokenPresent: Boolean(accessToken)
+          });
+          throw new Error('confirmation');
+        }
+
+        console.info('[customer-negotiation-backend-request]', {
+          table: table,
+          httpStatus: response.status,
+          errorCode: null,
+          errorMessage: null,
+          accessTokenPresent: Boolean(accessToken)
+        });
+        return rows[0];
+      }
+
+      async function handleNegotiationSubmit(e) {
         e.preventDefault();
+        if (customerNegotiationSubmissionInProgress) return;
+
+        const modal = document.getElementById('negotiation-modal');
+        const form = document.getElementById('negotiation-form');
         const status = document.getElementById('negotiation-status');
-        status.textContent = 'Negotiation preview only. Your offer has not been sent.';
-        status.classList.add('is-visible');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const offerInput = document.getElementById('negotiation-offer');
+        const messageInput = document.getElementById('negotiation-message');
+        const service = customerServiceCatalog[modal.dataset.serviceId];
+        const packageOption = service && service.packages.find(option =>
+          option.variantId === modal.dataset.serviceVariantId
+        );
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!service ||
+            !packageOption ||
+            packageOption.negotiable !== true ||
+            packageOption.serviceId !== service.id ||
+            !uuidPattern.test(service.id) ||
+            !uuidPattern.test(service.businessId || '') ||
+            !uuidPattern.test(packageOption.variantId || '') ||
+            packageOption.variantId !== modal.dataset.serviceVariantId) {
+          status.textContent = 'This package is no longer available for negotiation. Please select it again.';
+          status.classList.add('is-visible');
+          return;
+        }
+
+        const rawOffer = offerInput.value.trim();
+        let proposedPrice = null;
+        if (!offerInput.validity.valid) {
+          status.textContent = 'Enter a valid proposed price of zero or more.';
+          status.classList.add('is-visible');
+          offerInput.focus();
+          return;
+        }
+        if (rawOffer) {
+          proposedPrice = Number(rawOffer);
+          if (!Number.isFinite(proposedPrice) || proposedPrice < 0) {
+            status.textContent = 'Enter a valid proposed price of zero or more.';
+            status.classList.add('is-visible');
+            offerInput.focus();
+            return;
+          }
+        }
+        const message = messageInput.value.trim();
+        const hasMessageContent = proposedPrice !== null || message.length > 0;
+        if (modal.dataset.pendingMessageRequired === 'true' && !hasMessageContent) {
+          status.textContent = 'Your negotiation request was created, but its offer or message still needs to be saved. Add an offer or message and try again.';
+          status.classList.add('is-visible');
+          return;
+        }
+
+        customerNegotiationSubmissionInProgress = true;
+        status.textContent = '';
+        status.classList.remove('is-visible');
+        submitButton.disabled = true;
+        submitButton.dataset.originalText = submitButton.textContent;
+        submitButton.textContent = 'Sending...';
+
+        let requestStage = 'session';
+        try {
+          await customerAuthInitialization;
+          if (!await verifyCustomerSession()) {
+            status.textContent = 'Please log in to continue with this negotiation.';
+            status.classList.add('is-visible');
+            handleCustomerAction('negotiate', service.id, packageOption.id);
+            return;
+          }
+
+          const accessToken = localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY);
+          if (!accessToken) throw new Error('session');
+          const account = await requestCustomerAuth('/auth/v1/user', { accessToken: accessToken });
+          if (!account ||
+              !uuidPattern.test(typeof account.id === 'string' ? account.id : '') ||
+              typeof account.email !== 'string' ||
+              !account.email.trim()) {
+            throw new Error('account');
+          }
+          const customerId = account.id;
+          const customerEmail = account.email.trim();
+
+          let negotiationId = modal.dataset.pendingNegotiationId || '';
+          if (negotiationId && modal.dataset.pendingCustomerId !== customerId) {
+            throw new Error('account_mismatch');
+          }
+          if (!negotiationId) {
+            requestStage = 'negotiations';
+            const negotiation = await postCustomerNegotiationRow('negotiations', {
+              business_id: service.businessId,
+              service_id: service.id,
+              variant_id: packageOption.variantId,
+              customer_id: customerId,
+              customer_email: customerEmail,
+              status: 'pending'
+            }, accessToken, true);
+            negotiationId = negotiation.id;
+            modal.dataset.pendingNegotiationId = negotiationId;
+            modal.dataset.pendingCustomerId = customerId;
+            modal.dataset.pendingMessageRequired = String(hasMessageContent);
+          }
+
+          if (hasMessageContent) {
+            requestStage = 'negotiation_messages';
+            await postCustomerNegotiationRow('negotiation_messages', {
+              negotiation_id: negotiationId,
+              sender_id: customerId,
+              message: message || null,
+              proposed_price: proposedPrice
+            }, accessToken, false);
+          }
+
+          form.reset();
+          delete modal.dataset.pendingNegotiationId;
+          delete modal.dataset.pendingCustomerId;
+          delete modal.dataset.pendingMessageRequired;
+          modal.classList.add('hidden');
+          showCustomerNegotiationToast('Negotiation request sent successfully.');
+        } catch (error) {
+          console.error('Unable to submit the customer negotiation.', {
+            stage: requestStage,
+            errorType: error.message || 'request_error',
+            accessTokenPresent: Boolean(localStorage.getItem(CUSTOMER_ACCESS_TOKEN_KEY))
+          });
+          if (requestStage === 'negotiation_messages' && modal.dataset.pendingNegotiationId) {
+            modal.dataset.pendingMessageRequired = 'true';
+            status.textContent = 'Your negotiation request was created, but we could not save your offer or message. Please try again.';
+          } else if (error.message === 'confirmation') {
+            status.textContent = 'We could not confirm whether your negotiation request was saved. Please contact NovaTech before sending it again.';
+          } else if (error.message === 'account_mismatch') {
+            status.textContent = 'This negotiation was started with a different account. Log in with that account to continue.';
+          } else if (error.message === 'network') {
+            status.textContent = 'We could not confirm the request reached NovaTech. Check your connection and try again carefully.';
+          } else if (requestStage === 'negotiations') {
+            status.textContent = 'We could not send your negotiation request. Please check your connection and try again.';
+          } else if (error.message === 'account' || error.message === 'session') {
+            status.textContent = 'We could not verify your account. Please log in again and retry.';
+          } else {
+            status.textContent = 'We could not submit your negotiation. Please try again.';
+          }
+          status.classList.add('is-visible');
+        } finally {
+          customerNegotiationSubmissionInProgress = false;
+          submitButton.disabled = false;
+          submitButton.textContent = submitButton.dataset.originalText || 'Send Request';
+          delete submitButton.dataset.originalText;
+        }
       }
 
       function viewRequestDetails(reqId) {
